@@ -1,12 +1,39 @@
 """Configuration management for TUIDash."""
 
 import os
+import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Load .env file from project root
-env_path = Path(__file__).parent.parent / ".env"
-load_dotenv(env_path)
+
+def get_config_paths() -> list[Path]:
+    """Get list of paths to search for .env file."""
+    paths = []
+    
+    # For PyInstaller bundled app - look next to executable
+    if getattr(sys, 'frozen', False):
+        exe_dir = Path(sys.executable).parent
+        paths.append(exe_dir / ".env")
+        paths.append(exe_dir / "tuidash.env")
+    
+    # Current working directory
+    paths.append(Path.cwd() / ".env")
+    
+    # Project root (development)
+    paths.append(Path(__file__).parent.parent / ".env")
+    
+    # User home directory
+    paths.append(Path.home() / ".tuidash.env")
+    paths.append(Path.home() / ".config" / "tuidash" / ".env")
+    
+    return paths
+
+
+# Load .env from first available location
+for env_path in get_config_paths():
+    if env_path.exists():
+        load_dotenv(env_path)
+        break
 
 
 class Config:

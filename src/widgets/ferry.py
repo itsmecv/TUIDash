@@ -4,7 +4,6 @@ from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical, VerticalScroll
 from textual.widgets import Static, Label
 from textual.reactive import reactive
-from rich.text import Text
 
 from ..services.ferry_service import FerryService, FerrySchedule
 from ..services.kitsap_ferry_service import KitsapFerryService
@@ -79,6 +78,7 @@ class FerryWidget(Static):
     }
 
     FerryWidget .progress-bar {
+        color: $success;
     }
 
     FerryWidget .ferry-alert {
@@ -147,46 +147,38 @@ class FerryWidget(Static):
                 departures_by_terminal[terminal].append(dep)
 
             for terminal, departures in departures_by_terminal.items():
-                content.mount(Label(f"From {terminal}:", classes="ferry-direction"))
-                
-                # Find vessel currently serving this direction (at dock or in transit FROM this terminal)
-                active_vessel = None
-                for dep in departures:
-                    if dep.vessel_position:
-                        v = dep.vessel_position
-                        if v.departing_terminal == terminal:
-                            active_vessel = v
-                            break
-                
-                # Show active vessel with inline progress bar
-                if active_vessel:
-                    v = active_vessel
-                    progress_bar = v.progress_bar(15)
-                    dep_time = v.scheduled_departure.strftime("%I:%M %p").lstrip("0") if v.scheduled_departure else "?"
-                    dest = v.arriving_terminal[:3] if v.arriving_terminal else "???"
-                    
-                    if v.at_dock:
-                        status = "[dim]loading[/dim]"
-                    else:
-                        status = f"[dim]sailing • ETA {v.eta_display}[/dim]" if v.eta else "[dim]sailing[/dim]"
-                    
-                    progress_text = Text.from_markup(f" {dep_time} [dark_orange]{terminal[:3]}[/dark_orange]\\[{progress_bar}][dodger_blue2]{dest}[/dodger_blue2] {status}")
-                    content.mount(Static(progress_text, classes="progress-bar"))
-                
-                # Show next 2 upcoming departures
                 next_deps = [d for d in departures if d.time_until().total_seconds() > 0][:2]
+                if not next_deps:
+                    continue
+
+                content.mount(Label(f"From {terminal}:", classes="ferry-direction"))
+
                 for dep in next_deps:
                     row = Horizontal(classes="departure-row")
                     content.mount(row)
                     
+                    # Time with delay indicator
                     if dep.is_cancelled:
-                        row.mount(Label(f" {dep.time_display}", classes="departure-cancelled"))
+                        time_class = "departure-cancelled"
+                        row.mount(Label(dep.time_display, classes=time_class))
                     elif dep.is_delayed:
-                        row.mount(Label(f" {dep.time_display} +{dep.delay_minutes}m", classes="departure-delayed"))
+                        row.mount(Label(f"{dep.time_display} +{dep.delay_minutes}m", classes="departure-delayed"))
                     else:
-                        row.mount(Label(f" {dep.time_display}", classes="departure-time"))
+                        row.mount(Label(dep.time_display, classes="departure-time"))
                     
-                    row.mount(Label(f" ({dep.time_until_display()})", classes="departure-countdown"))
+                    row.mount(Label(f"({dep.time_until_display()})", classes="departure-countdown"))
+                    
+                    # Show vessel status if available
+                    if dep.vessel_position:
+                        v = dep.vessel_position
+                        dest = v.arriving_terminal[:3] if v.arriving_terminal else dep.arriving_terminal[:3]
+                        progress_bar = v.progress_bar(22)
+                        if progress_bar:
+                            content.mount(Label(f"  {v.departing_terminal[:3]} {progress_bar} {dest}", classes="progress-bar"))
+                            if v.at_dock:
+                                content.mount(Label(f"  ⛴ {v.vessel_name} loading", classes="vessel-status"))
+                            elif v.eta:
+                                content.mount(Label(f"  ETA {v.eta_display} ({v.speed:.1f} kts)", classes="vessel-eta"))
         elif not Config.WSDOT_API_KEY:
             content.mount(Label("WSF: API key not set", classes="ferry-no-api"))
 

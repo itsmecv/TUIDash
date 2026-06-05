@@ -48,8 +48,7 @@ class VesselLocation:
     def progress_bar(self, width: int = 20) -> str:
         """ASCII progress bar for crossing with boat icon."""
         if self.at_dock:
-            # Show boat at dock (position 0)
-            return "⛴" + "─" * (width - 1)
+            return ""
         pct = self.progress_percent / 100
         boat_pos = int((width - 1) * pct)
         bar = ""

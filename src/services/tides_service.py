@@ -262,15 +262,10 @@ def generate_tide_chart(predictions: list[TideEvent], width: int = 48, height: i
                 marker_char = "●"
             
             if marker_char:
-                if marker_char == "H":
-                    line += "[dark_orange]H[/dark_orange]"
-                elif marker_char == "L":
-                    line += "[dodger_blue2]L[/dodger_blue2]"
-                else:
-                    line += marker_char
+                line += marker_char
             elif row == wave_rows[col]:
-                # Draw wave line in blue
-                line += "[dodger_blue2]~[/dodger_blue2]"
+                # Draw wave line
+                line += "~"
             else:
                 line += " "
         

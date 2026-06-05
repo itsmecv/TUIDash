@@ -4,7 +4,6 @@ from textual.app import ComposeResult
 from textual.containers import Container, Horizontal
 from textual.widgets import Static, Label
 from textual.reactive import reactive
-from rich.text import Text
 
 from ..services.tides_service import TidesService, TidesData, get_tide_icon, generate_tide_chart
 from ..config import Config
@@ -28,6 +27,7 @@ class TidesWidget(Static):
     }
 
     TidesWidget .tide-chart {
+        color: $primary;
     }
 
     TidesWidget .tide-info {
@@ -39,7 +39,7 @@ class TidesWidget(Static):
     }
 
     TidesWidget .tide-type-high {
-        color: $warning;
+        color: $success;
     }
 
     TidesWidget .tide-type-low {
@@ -98,8 +98,7 @@ class TidesWidget(Static):
         if self.data and self.data.predictions:
             # Generate and display wave chart (48 hours with depth Y-axis)
             chart = generate_tide_chart(self.data.predictions, width=52, height=12)
-            chart_text = Text.from_markup(chart)
-            content.mount(Static(chart_text, classes="tide-chart"))
+            content.mount(Static(chart, classes="tide-chart"))
             
             # Show upcoming tide events inline
             info = Horizontal(classes="tide-info")
